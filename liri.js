@@ -1,55 +1,97 @@
-//var twitter = require('twitter');
+var accessKeys = require("./keys.js");
+var twitterR = require('twitter');
 var spotify = require('spotify');
 var request = require("request");
-var accessKeys = require("./keys.js");
+var fs = require("fs");
+//var textFile = require("./random.txt");
 var command = process.argv[2];
+var record = "\n" + process.argv[2] + "," + process.argv[3]
 
 function omdb(){
-var movieTitle = process.argv[3];
+	function movieInfo(){
+		request("http://www.omdbapi.com/?t="+movieTitle+"&r=json", function(error, response, body) {
+		console.log("Title: " + JSON.parse(body).Title);
+		console.log("Year: " + JSON.parse(body).Year);
+		console.log("Rating: " + JSON.parse(body).Rated);
+		console.log("Country: " + JSON.parse(body).Country);
+		console.log("Language: " + JSON.parse(body).Language);
+		console.log("Plot: " + JSON.parse(body).Plot);
+		console.log("Main Actors: " + JSON.parse(body).Actors);
+		console.log("Rotten Tomatoes rating is: " + JSON.parse(body).Ratings);
+		console.log("Rotten Tomatoes URL is: https://www.rottentomatoes.com/m/" + movieTitle);
+		});
+	};
+	var movieTitle = process.argv[3];
 	request("http://www.omdbapi.com/?t="+movieTitle+"&r=json", function(error, response, body) {
-		if (!error && response.statusCode === 200) {
-			console.log("The movie's title is: " + JSON.parse(body).Title);
-			console.log("The year the movie came out was: " + JSON.parse(body).Year);
-			console.log("The movie's rating is: " + JSON.parse(body).Rated);
-			console.log("The country where the movie was produced: " + JSON.parse(body).Country);
-			console.log("The language of the movie is: " + JSON.parse(body).Language);
-			console.log("The movie's plot is: " + JSON.parse(body).Plot);
-			console.log("The movie's actors are: " + JSON.parse(body).Actors);
-//			console.log("The movie's Rotten Tomatoes rating is: " + JSON.parse(body).Ratings);
-//			console.log("The movie's Rotten Tomatoes URL is: " + JSON.parse(body));
-//								https://www.rottentomatoes.com/m/get_out
+		if (response.statusCode === 200) {
+			movieInfo();
+//			fs.appendFile("random.txt", record);
 		}
-		else{
+		else if (error) {
 			movieTitle = "Mr. Nobody";
-		}
-});
+			console.log("There has been an error processing your request.  Here is information on Mr. Nobody");
+			request("http://www.omdbapi.com/?t="+movieTitle+"&r=json", function(error, response, body) {
+					movieInfo();
+			});
+		};
+	});
 };
 
 function spotifySongs(){
 	var songName = process.argv[3];
-	spotify.search({ type: 'track', query: songName }, function(error, data) {
-		if (error) {
-			console.log('Error occurred: ' + error);
+	spotify.search({ type: 'track', query: songName }, function(err, data) {
+		if (err) {
+			console.log('Error occurred: ' + err);
+			return;
 		}
 		else {
-			console.log("The name of the Artist is: " + data.name);
-			console.log("The name of the song is: " + songName);
-//			console.log("This is a link to a preview of the song: " + JSON.parse(body).Title);
-//			console.log("This song is from the: " + JSON.parse(body).Album + " album");
+			console.log("Song: " + data.tracks.items[0].name);
+			console.log("Artist: " + data.tracks.items[0].artists[0].name);
+			console.log("Album: " + data.tracks.items[0].album.name);
+			console.log("Preview URL: " + "<a href=" + data.tracks.items[0].preview_url + "></a>");
+//			fs.appendFile("random.txt", record);
 		};
 	});
 };
-/*
+
 function twitter(){
-var tweets = process.argv[3];
-	client.get(path, params, callback);
-	request("http://www.omdbapi.com/?t="+movieTitle+"&r=json", function(error, response, body, data) {
-		if (!error && response.statusCode === 200) {
-			
+	var client = new twitterR(accessKeys.twitterKeys);
+	client.get('statuses/user_timeline.json?count=20', function(err, tweets, response) {
+		if (!err) {
+			for (var i = 0; i < tweets.length; i++) {
+				console.log(tweets[i].text + "\n ---------------------");
+			};
+//			fs.appendFile("random.txt", record);
 		}
-});
+		else {
+			console.log("Error please retry...");
+		};
+	});
 };
-*/
+
+function doIt(){
+	fs.readFile("random.txt", "utf8", function(err, data){
+//		data = data.split(",");
+		if (!err) {
+			for (var i = 0; i < data.length; i++) {
+				if (command == "movie-this") {
+					omdb(data[i]);
+				};
+				if (command == "spotify-this-song") {
+					spotifySongs(data[i]);
+				};
+				if (command == "my-tweets") {
+					twitter(data[i]);
+				};
+				if (command == "do-what-it-says"){
+					doIt(data[i]);
+				};
+			};
+		};
+	});
+	 
+};
+
 if (command == "movie-this") {
 	omdb();
 };
@@ -59,6 +101,6 @@ if (command == "spotify-this-song") {
 if (command == "my-tweets") {
 	twitter();
 };
-if (command == "do-what-it-says"){
-
-}
+if (command == "do-what-it-says") {
+	doIt();
+};
