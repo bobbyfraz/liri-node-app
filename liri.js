@@ -73,7 +73,6 @@ function movieOmdb() {
 				"* Country: " + JSON.parse(body).Country, "* Language: " + JSON.parse(body).Language, 
 				"* Plot: " + JSON.parse(body).Plot, "* Actors: " + JSON.parse(body).Actors, "* Rotten Tomatoes Rating: " + JSON.parse(body).Ratings[1].Value,
 				"* Rotten Tomatoes URL: https://www.rottentomatoes.com/m/" + argument2];
-
 			for (var i = 0; i < infoData.length; i++) {
 				console.log(infoData[i]);
 				fs.appendFile("records.txt", infoData[i] + "\n", function(err) {
